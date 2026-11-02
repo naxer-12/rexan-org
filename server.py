@@ -26,7 +26,7 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 DB_PATH = os.path.join(DATA_DIR, "rexan.db")
 
-app = FastAPI(title="Rexan", description="Cloned from HackerTube, rebranded to rexan.org")
+app = FastAPI(title="Rexan", description="Cloned from HackerTube, rebranded to rexan.in")
 
 app.add_middleware(
     CORSMiddleware,
