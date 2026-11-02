@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Rexan - 1-Click Video Curator",
+  "version": "1.0.0",
+  "description": "Add YouTube videos directly into your Rexan library with a single click.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  }
+}

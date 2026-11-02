@@ -1,0 +1,1407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rexan</title>
+<meta name="description" content="The YouTube videos that Hacker News keeps telling each other to watch.">
+<link rel="canonical" href="https://rexan.org/">
+<meta property="og:site_name" content="Rexan">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rexan">
+<meta property="og:description" content="The YouTube videos that Hacker News keeps telling each other to watch.">
+<meta property="og:url" content="https://rexan.org/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Rexan">
+<meta name="twitter:description" content="The YouTube videos that Hacker News keeps telling each other to watch.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ff6600'/%3E%3Ctext x='16' y='23.5' text-anchor='middle' font-family='Helvetica,Arial,sans-serif' font-weight='700' font-size='22' fill='white'%3ER%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f2f2f2; --bg3: #e5e5e5; --text: #0f0f0f; --muted: #606060;
+    --line: #e5e5e5; --accent: #ff6600; --chip: #f2f2f2; --chip-on: #0f0f0f; --chip-on-text: #ffffff;
+    --hover: rgba(0,0,0,.05); --good: #065fd4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f0f0f; --bg2: #272727; --bg3: #3f3f3f; --text: #f1f1f1; --muted: #aaaaaa;
+      --line: #303030; --chip: #272727; --chip-on: #f1f1f1; --chip-on-text: #0f0f0f;
+      --hover: rgba(255,255,255,.08); --good: #3ea6ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f0f; --bg2: #272727; --bg3: #3f3f3f; --text: #f1f1f1; --muted: #aaaaaa;
+    --line: #303030; --chip: #272727; --chip-on: #f1f1f1; --chip-on-text: #0f0f0f;
+    --hover: rgba(255,255,255,.08); --good: #3ea6ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 14px/1.4 Roboto, "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  svg { width: 24px; height: 24px; fill: currentColor; flex: none; }
+
+  /* top bar */
+  .top { position: fixed; inset: 0 0 auto 0; height: 56px; z-index: 10; background: var(--bg);
+         display: flex; align-items: center; justify-content: space-between; padding: 0 16px; gap: 16px; }
+  .left { display: flex; align-items: center; gap: 12px; flex: none; }
+  .icon { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; }
+  .icon:hover { background: var(--hover); }
+  .brand { display: flex; align-items: center; font-weight: 700; font-size: 20px; letter-spacing: -.8px; white-space: nowrap; }
+  .brand .word b { color: var(--accent); font-weight: 700; }
+  .search { flex: 0 1 640px; display: flex; min-width: 0; }
+  .search input { flex: 1; min-width: 0; height: 40px; padding: 0 16px; font: inherit; font-size: 16px;
+                  color: var(--text); background: var(--bg); border: 1px solid var(--bg3); border-right: 0;
+                  border-radius: 40px 0 0 40px; outline: none; }
+  .search input:focus { border-color: var(--good); }
+  .search button { width: 64px; height: 40px; border: 1px solid var(--bg3); background: var(--bg2);
+                   border-radius: 0 40px 40px 0; display: grid; place-items: center; }
+  .right { display: flex; align-items: center; }
+
+  /* sidebar */
+  .side { position: fixed; top: 56px; bottom: 0; left: 0; width: 240px; overflow-y: auto; padding: 12px;
+          background: var(--bg); z-index: 9; }
+  .side a { display: flex; align-items: center; gap: 24px; height: 40px; padding: 0 12px; border-radius: 10px; }
+  .side a:hover { background: var(--hover); }
+  .side a.on { background: var(--bg2); font-weight: 500; }
+  .side .area { gap: 14px; }
+  .side .area span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.collapsed .side { width: 72px; padding: 4px; }
+  body.collapsed .side a { flex-direction: column; gap: 4px; height: 74px; justify-content: center; font-size: 10px; padding: 0; }
+  .scrim { display: none; }
+
+  main { margin-left: 240px; padding: 56px 24px 40px; }
+  body.collapsed main { margin-left: 72px; }
+
+  /* chips */
+  .chip { flex: none; height: 32px; padding: 0 12px; border-radius: 8px; background: var(--chip);
+          font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; }
+  .chip:hover { background: var(--bg3); }
+  .chip.on { background: var(--chip-on); color: var(--chip-on-text); }
+
+  /* video grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 40px 16px; padding-top: 12px; }
+  .vcard { display: block; min-width: 0; }
+  .thumb { position: relative; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: var(--bg2); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: border-radius .15s; }
+  .later-btn { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 4px;
+               background: rgba(0,0,0,.8); color: #fff; display: none; place-items: center; cursor: pointer; }
+  .later-btn svg { width: 20px; height: 20px; }
+  a:hover .later-btn, .later-btn:focus, .later-btn.on { display: grid; }
+  .dur { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,.8); color: #fff; font-size: 12px;
+         font-weight: 500; padding: 1px 4px; border-radius: 4px; }
+  .info { display: flex; gap: 12px; padding-top: 12px; }
+  .vt { margin: 0 0 4px; font-size: 16px; font-weight: 500; line-height: 22px;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .sub { color: var(--muted); font-size: 14px; line-height: 20px; }
+  .sentinel { height: 1px; }
+  .status { color: var(--muted); padding: 24px 0; text-align: center; }
+
+  /* search results (list layout) */
+  .results { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; max-width: 1100px; }
+  .srow { display: flex; gap: 16px; }
+  .srow .thumb { width: 360px; flex: none; }
+  .srow .vt { font-size: 18px; line-height: 26px; font-weight: 400; }
+  .srow .chan { display: flex; align-items: center; gap: 8px; margin: 12px 0; color: var(--muted); }
+  .snip { color: var(--muted); font-size: 12px; line-height: 18px;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .via { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--muted); background: var(--bg2);
+         padding: 2px 6px; border-radius: 4px; }
+  .note { color: var(--muted); padding: 16px 0 0; }
+  .filterbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 16px; max-width: 1100px; }
+  .catwrap { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
+  .catwrap .chip { display: inline-flex; align-items: center; text-decoration: none; }
+  .pagehead .crumb { display: inline-block; margin-top: 16px; color: var(--muted); font-size: 14px; }
+  .pagehead .crumb + h2 { margin-top: 2px; }
+  .explore { max-width: 1400px; }
+  .explore .quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
+  .explore .quick .pill { color: var(--text); text-decoration: none; }
+  .explore .quick + .areas { margin-top: 16px; }
+  .sechead { font-size: 20px; font-weight: 700; margin: 28px 0 2px; }
+  .sechead + .sub { margin: 0 0 14px; }
+  .areas { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .areacard { background: var(--bg2); border-radius: 12px; padding: 14px 16px; }
+  .areaname { display: flex; align-items: center; font-weight: 600; font-size: 16px; margin-bottom: 6px; }
+  .areacard .count { margin-left: auto; padding-left: 8px; color: var(--muted); font-size: 12px; font-weight: 400; }
+  .cats a { display: flex; align-items: center; padding: 4px 0; color: var(--muted); font-size: 14px; }
+  .cats a:hover, .areaname:hover { color: var(--text); text-decoration: underline; }
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px 16px; }
+  .mosaic { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; aspect-ratio: 16 / 9;
+            border-radius: 12px; overflow: hidden; background: var(--bg2); }
+  .mosaic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .plcount { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,.8); color: #fff; font-size: 12px;
+             font-weight: 500; padding: 2px 6px; border-radius: 4px; }
+  .plcard .vt { margin: 10px 0 4px; }
+  .plpage { max-width: 1100px; }
+  .plhead { display: flex; gap: 24px; padding-top: 24px; align-items: flex-start; }
+  .plhead .mosaic { width: 360px; flex: none; }
+  .plinfo { min-width: 0; }
+  .plinfo .crumb { color: var(--muted); font-size: 14px; }
+  .plinfo h2 { font-size: 28px; line-height: 34px; margin: 4px 0 6px; }
+  .plinfo .intro { line-height: 22px; margin: 12px 0; }
+  .plinfo .filterbar { padding-top: 0; }
+  .plrows { list-style: none; padding: 0; margin: 24px 0 0; display: flex; flex-direction: column; gap: 16px; }
+  .plrows li { display: flex; gap: 12px; align-items: flex-start; }
+  .plrows .num { width: 24px; flex: none; text-align: right; color: var(--muted); padding-top: 4px; }
+  .plrows .srow { flex: 1; min-width: 0; }
+  .plrows .srow .thumb { width: 280px; }
+  .plnote { margin: 8px 0 0; color: var(--text); font-size: 14px; line-height: 20px; }
+  .filterbar .grow { flex: 1; }
+  .playall { color: var(--text); text-decoration: none; }   /* the chip bar already has bottom padding */
+  .filterbar .chip { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  .filterbar .chip span { font-size: 16px; line-height: 1; opacity: .7; }
+  .pill.on { background: var(--bg3); }
+  .filters { display: flex; gap: 16px 40px; flex-wrap: wrap; padding: 16px 0 8px; max-width: 1100px;
+             border-bottom: 1px solid var(--bg3); }
+  .filters[hidden] { display: none; }
+  .filters h4 { margin: 0 0 8px; padding-bottom: 10px; border-bottom: 1px solid var(--bg3); font-size: 12px;
+                font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); min-width: 140px; }
+  .filters a { display: block; padding: 7px 0; color: var(--muted); text-decoration: none; }
+  .filters a:hover, .filters a.on { color: var(--text); }
+  .filters a.on { font-weight: 500; }
+
+  /* watch page */
+  .watch { display: flex; gap: 24px; padding-top: 24px; max-width: 1754px; margin: 0 auto; }
+  .primary { flex: 1; min-width: 0; }
+  .secondary { width: 402px; flex: none; }
+  .player { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #000; }
+  .player iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .watch h1 { font-size: 20px; line-height: 28px; font-weight: 700; margin: 12px 0 8px; }
+  .owner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .owner .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .owner .who b { font-size: 16px; font-weight: 500; display: block; }
+  .actions { display: flex; gap: 8px; }
+  .pill { height: 36px; padding: 0 16px; border-radius: 18px; background: var(--bg2); font-weight: 500;
+          display: inline-flex; align-items: center; gap: 6px; }
+  .pill:hover { background: var(--bg3); }
+  .pill svg { width: 20px; height: 20px; }
+  .seg { display: flex; border-radius: 18px; overflow: hidden; background: var(--bg2); }
+  .seg button { height: 36px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+  .seg button:hover { background: var(--bg3); }
+  .seg button + button { border-left: 1px solid var(--bg3); }
+  .seg button.on svg { color: var(--good); }
+  .desc { background: var(--bg2); border-radius: 12px; padding: 12px; margin-top: 12px; }
+  .desc .top-line { font-weight: 500; margin-bottom: 6px; }
+  .desc p { margin: 0 0 10px; }
+  .desc .why { color: var(--muted); }
+  .desc .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--bg3); }
+  .tag.cat { font-weight: 500; }
+  .comments h2 { font-size: 20px; margin: 24px 0 16px; }
+  .cmt { display: flex; gap: 16px; margin-bottom: 20px; }
+  .cmt .meta { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .cmt .meta b { color: var(--text); font-weight: 500; margin-right: 4px; }
+  .cmt .body { word-wrap: break-word; overflow-wrap: anywhere; }
+  .cmt .body p { margin: 0 0 6px; }
+  .cmt .foot { display: flex; gap: 12px; font-size: 12px; color: var(--muted); align-items: center; }
+  .cmt .foot a:hover { color: var(--text); }
+  .stance { color: var(--muted); }
+  .stance.strong_rec { color: var(--text); font-weight: 500; }
+  .mk { color: var(--muted); white-space: nowrap; }
+  .mk.v { color: var(--text); font-weight: 500; }
+  .more { color: var(--muted); font-weight: 500; font-size: 13px; }
+  .next { display: flex; gap: 8px; margin-bottom: 8px; }
+  .next .thumb { width: 168px; flex: none; border-radius: 8px; }
+  .next .vt { font-size: 14px; line-height: 20px; }
+  .next .sub { font-size: 12px; line-height: 18px; }
+
+  /* area page header */
+  .pagehead h2 { font-size: 24px; margin: 16px 0 0; }
+  .pagehead .sub { margin: 4px 0 0; }
+  /* keyboard selection, shortcuts overlay, toast */
+  .vcard, .srow, .next { scroll-margin: 128px 0 24px; border-radius: 12px; }
+  .kbd { outline: 2px solid var(--good); outline-offset: 4px; }
+  .help { display: none; position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.5); place-items: center; padding: 16px; }
+  .help.on { display: grid; }
+  .help-card { background: var(--bg); color: var(--text); border-radius: 12px; padding: 20px 24px; max-width: 420px; width: 100%;
+               box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+  .help-card h3 { margin: 0 0 12px; font-size: 18px; }
+  .help-card table { border-collapse: collapse; width: 100%; }
+  .help-card td { padding: 5px 0; vertical-align: top; }
+  .help-card td:first-child { width: 100px; white-space: nowrap; }
+  kbd { font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 3px 6px; border-radius: 4px;
+        background: var(--bg2); border: 1px solid var(--bg3); }
+  .toast { position: fixed; left: 24px; bottom: 24px; z-index: 21; background: #222; color: #fff; padding: 10px 16px;
+           border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(8px); transition: opacity .15s, transform .15s;
+           pointer-events: none; }
+  .toast.on { opacity: 1; transform: none; }
+  .settings { max-width: 720px; }
+  .setting { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-top: 24px;
+             padding: 16px; border-radius: 12px; background: var(--bg2); cursor: pointer; }
+  .setting b { font-weight: 500; font-size: 15px; }
+  .setting p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+  .switch { position: relative; flex: none; width: 36px; height: 20px; margin-top: 2px; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch .knob { position: absolute; inset: 0; border-radius: 10px; background: var(--bg3); transition: background .15s; pointer-events: none; }
+  .switch .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+                         background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s; }
+  .switch input:checked + .knob { background: var(--good); }
+  .switch input:checked + .knob::after { transform: translateX(16px); }
+  .switch input:focus-visible + .knob { outline: 2px solid var(--good); outline-offset: 2px; }
+  .poster { position: relative; width: 100%; height: 100%; padding: 0; display: block; }
+  .poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .poster .play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px;
+                  border-radius: 14px; background: rgba(0,0,0,.7); display: grid; place-items: center; transition: background .15s; }
+  .poster:hover .play { background: var(--accent); }
+  .poster .play svg { width: 32px; height: 32px; color: #fff; }
+  .about { max-width: 720px; margin: 0 auto; padding: 24px 0 48px; font-size: 15px; line-height: 1.6; }
+  .about h1 { font-size: 32px; line-height: 1.2; margin: 8px 0 8px; letter-spacing: -.5px; }
+  .about .lede { font-size: 18px; color: var(--muted); margin: 0 0 24px; }
+  .about h2 { font-size: 20px; margin: 32px 0 8px; }
+  .about p { margin: 0 0 12px; }
+  .about ul { margin: 0 0 12px; padding-left: 20px; }
+  .about li { margin-bottom: 6px; }
+  .about a { color: var(--good); }
+  .about a:hover { text-decoration: underline; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 8px 0 8px; }
+  .stat { background: var(--bg2); border-radius: 12px; padding: 14px 16px; }
+  .stat b { display: block; font-size: 24px; font-weight: 700; letter-spacing: -.5px; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  .steps { counter-reset: s; list-style: none; padding: 0 !important; }
+  .steps li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 12px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px;
+                      border-radius: 50%; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700;
+                      display: grid; place-items: center; }
+  .fine { color: var(--muted); font-size: 13px; }
+  .about code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg2); padding: 1px 5px; border-radius: 4px; }
+  .about .pill.dl { color: var(--text); text-decoration: none; }
+  .files { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .files td { padding: 8px 8px 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  .files td.num { white-space: nowrap; color: var(--muted); }
+  .files td:first-child { white-space: nowrap; }
+  .prompt { font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg2); border-radius: 12px;
+            padding: 14px 16px; white-space: pre-wrap; margin: 12px 0 8px; }
+
+  @media (max-width: 1100px) {
+    .watch { flex-direction: column; }
+    .secondary { width: 100%; }
+  }
+  @media (max-width: 800px) {
+    main, body.collapsed main { margin-left: 0; padding: 56px 16px 32px; }
+    .side { transform: translateX(-100%); transition: transform .2s; width: 240px; box-shadow: 0 0 24px rgba(0,0,0,.3); }
+    body.drawer .side { transform: none; }
+    body.collapsed .side { width: 240px; padding: 12px; }
+    body.collapsed .side a { flex-direction: row; height: 40px; font-size: 14px; padding: 0 12px; justify-content: flex-start; gap: 24px; }
+    body.drawer .scrim { display: block; position: fixed; inset: 56px 0 0 0; background: rgba(0,0,0,.4); z-index: 8; }
+    .brand { font-size: 17px; letter-spacing: -.6px; }
+    .search input { padding: 0 12px; }
+    .search button { width: 44px; }
+    .icon { width: 34px; }
+    .srow { flex-direction: column; gap: 8px; }
+    .srow .thumb { width: 100%; }
+    .plhead { flex-direction: column; gap: 16px; padding-top: 16px; }
+    .plhead .mosaic { width: 100%; }
+    .plrows .srow .thumb { width: 100%; }
+    .plrows .num { display: none; }
+    .grid { grid-template-columns: 1fr; gap: 24px; }
+    .watch { padding-top: 0; margin: 0 -16px; }
+    .player { border-radius: 0; }
+    .primary > :not(.player):not(.desc), .secondary { padding-left: 16px; padding-right: 16px; }
+    .desc { margin: 12px 16px 0; }
+    .top { gap: 8px; padding: 0 8px 0 4px; }
+    .left { gap: 4px; }
+  }
+
+  /* Add video form & extension styles */
+  .add-container { max-width: 760px; margin: 0 auto; padding: 24px 0 60px; }
+  .add-container h1 { font-size: 28px; line-height: 1.2; margin: 8px 0 8px; }
+  .add-container .subhead { color: var(--muted); font-size: 15px; margin: 0 0 24px; line-height: 1.5; }
+  .form-card { background: var(--bg2); border-radius: 14px; padding: 22px 24px; margin-bottom: 24px; border: 1px solid var(--bg3); }
+  .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .field label { font-weight: 600; font-size: 14px; color: var(--text); }
+  .field input[type="text"], .field input[type="url"], .field select, .field textarea {
+    width: 100%; height: 42px; padding: 0 14px; font: inherit; font-size: 15px;
+    color: var(--text); background: var(--bg); border: 1px solid var(--bg3);
+    border-radius: 8px; outline: none; transition: border-color .15s;
+  }
+  .field textarea { height: 90px; padding: 10px 14px; resize: vertical; line-height: 1.4; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--good); }
+  .url-row { display: flex; gap: 10px; }
+  .url-row input { flex: 1; min-width: 0; }
+  .btn-primary { height: 42px; padding: 0 20px; border-radius: 8px; background: var(--accent);
+                 color: #fff; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center;
+                 justify-content: center; gap: 8px; border: none; cursor: pointer; text-decoration: none; }
+  .btn-primary:hover { opacity: .9; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .tag-editor { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--bg);
+                padding: 8px 10px; border: 1px solid var(--bg3); border-radius: 8px; min-height: 44px; }
+  .tag-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+              background: var(--bg2); border: 1px solid var(--bg3); border-radius: 14px; font-size: 13px; font-weight: 500; }
+  .tag-del { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center;
+             cursor: pointer; opacity: .7; line-height: 1; font-weight: bold; font-size: 14px; }
+  .tag-del:hover { opacity: 1; color: var(--accent); }
+  .tag-input { border: none !important; background: transparent !important; height: 30px !important;
+               padding: 0 6px !important; flex: 1; min-width: 140px; outline: none !important; }
+  .preview-box { display: flex; gap: 16px; padding: 14px; background: var(--bg); border-radius: 10px;
+                 margin-bottom: 20px; border: 1px solid var(--bg3); }
+  .preview-thumb { width: 180px; aspect-ratio: 16/9; border-radius: 8px; object-fit: cover; flex: none; background: var(--bg2); }
+  .preview-meta { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .preview-title { font-weight: 600; font-size: 15px; line-height: 1.3; }
+  .preview-channel { color: var(--muted); font-size: 13px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600;
+           padding: 3px 8px; border-radius: 6px; }
+  .badge.hn { background: rgba(255,102,0,.15); color: #ff6600; }
+  .badge.yt { background: rgba(255,0,0,.12); color: #e62117; }
+  .badge.exist { background: rgba(6,95,212,.12); color: var(--good); }
+  .extension-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+                      background: var(--bg2); border-left: 4px solid var(--accent); padding: 16px 20px;
+                      border-radius: 0 10px 10px 0; margin-top: 32px; font-size: 14px; }
+  .instructions-card { background: var(--bg2); border-radius: 12px; padding: 24px; line-height: 1.6; }
+  .instructions-card ol { padding-left: 20px; margin: 12px 0; }
+  .instructions-card li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="left">
+    <button class="icon" id="menu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+    <a class="brand" href="/" aria-label="Rexan home"><span class="word">Rexan<b>.org</b></span></a>
+  </div>
+  <form class="search" id="search" role="search">
+    <input id="q" type="search" placeholder="Search" autocomplete="off" aria-label="Search">
+    <button aria-label="Search"><svg viewBox="0 0 24 24"><path d="M20.87 20.17l-5.59-5.59A6.95 6.95 0 0 0 17 10a7 7 0 1 0-7 7c1.75 0 3.35-.64 4.58-1.71l5.59 5.59.7-.71zM10 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg></button>
+  </form>
+  <div class="right">
+    <a class="icon" href="/add" aria-label="Add video to Rexan" title="Add video to Rexan"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></a>
+    <a class="icon" href="/about" aria-label="About Rexan" title="About Rexan"><svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg></a>
+    <button class="icon" id="theme" aria-label="Toggle theme"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg></button>
+  </div>
+</header>
+<nav class="side" id="side">
+  <a href="/" data-nav="home"><svg viewBox="0 0 24 24"><path d="M4 21V10.08l8-6.96 8 6.96V21h-6v-6h-4v6H4z"/></svg><span>Home</span></a>
+  <a href="/add" data-nav="add"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg><span>Add video</span></a>
+  <a href="/browse?dur=xlong" data-nav="longs"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zm2 2v8h14V8zm4 1.5v5l4.5-2.5z"/></svg><span>Longs</span></a>
+  <a href="/liked" data-nav="liked"><svg viewBox="0 0 24 24"><path d="M18.77 11h-4.23l1.52-4.94C16.38 5.03 15.54 4 14.38 4c-.58 0-1.14.24-1.52.65L7 11H3v10h4h1h9.43c1.06 0 1.98-.67 2.19-1.61l1.34-6c.27-1.24-.78-2.39-2.19-2.39zM7 20H4v-8h3v8z"/></svg><span>Liked</span></a>
+  <a href="/history" data-nav="history"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span>History</span></a>
+  <a href="/later" data-nav="later"><svg viewBox="0 0 24 24"><path d="M14.97 16.95 10 13.87V7h2v5.76l4.03 2.49-1.06 1.7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg><span>Watch later</span></a>
+  <a href="/categories" data-nav="categories"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm2 2v3h3V6zm7-2h7v7h-7zm2 2v3h3V6zM4 13h7v7H4zm2 2v3h3v-3zm7-2h7v7h-7zm2 2v3h3v-3z"/></svg><span>Categories</span></a>
+  <a href="/playlists" data-nav="playlists"><svg viewBox="0 0 24 24"><path d="M3 6h12v2H3zm0 4h12v2H3zm0 4h8v2H3zm12 0v6l5-3z"/></svg><span>Playlists</span></a>
+  <a href="/settings" data-nav="settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg><span>Settings</span></a>
+</nav>
+<div class="scrim" id="scrim"></div>
+<div class="help" id="help"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<main id="view"></main>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const view = $("#view");
+const store = {
+  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let likes = store.get("likes", []), dislikes = store.get("dislikes", []);
+let seen = store.get("seen", []);           // videos opened, newest last; kept out of the Home feed
+// a fresh seed on every page load: reloading rerolls Home, while scrolling and going back from a video keep it
+const seed = String(Math.floor(Math.random() * 1e9));
+let watchLater = store.get("later", []);   // saved for later, newest last
+const CLOCK = '<svg viewBox="0 0 24 24"><path d="M14.97 16.95 10 13.87V7h2v5.76l4.03 2.49-1.06 1.7zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+function toggleLater(vid) {
+  watchLater = watchLater.includes(vid) ? watchLater.filter(v => v !== vid) : watchLater.concat(vid);
+  store.set("later", watchLater);
+  return watchLater.includes(vid);
+}
+function markSeen(vid) {
+  seen = seen.filter(v => v !== vid).concat(vid).slice(-200);
+  store.set("seen", seen);
+}
+
+// ---------- formatting ----------
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dur = (s) => { if (!s) return ""; const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return h ? `${h}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}` : `${m}:${String(x).padStart(2,"0")}`; };
+const views = (n) => n == null ? "" : n >= 1e9 ? `${(n/1e9).toFixed(1).replace(/\.0$/,"")}B views`
+  : n >= 1e6 ? `${(n/1e6).toFixed(1).replace(/\.0$/,"")}M views` : n >= 1e3 ? `${Math.round(n/1e3)}K views` : `${n} views`;
+function ago(iso) {
+  if (!iso) return "";
+  const s = (Date.now() - new Date(iso)) / 1000, units = [["year", 31536000], ["month", 2592000], ["week", 604800], ["day", 86400]];
+  for (const [u, sec] of units) { const n = Math.floor(s / sec); if (n >= 1) return `${n} ${u}${n > 1 ? "s" : ""} ago`; }
+  return "today";
+}
+const laterBtn = (vid) => {
+  const on = watchLater.includes(vid);
+  return `<span class="later-btn ${on ? "on" : ""}" role="button" tabindex="0" data-later="${vid}"
+    title="${on ? "Remove from Watch later" : "Watch later"}" aria-label="${on ? "Remove from Watch later" : "Watch later"}">${on ? CHECK : CLOCK}</span>`;
+};
+// "Video frames" setting (on by default): show a frame from the middle of the video instead of the
+// uploader's attention-optimized thumbnail. By default the frame comes straight from YouTube (hq2.jpg);
+// a server started with --frames local serves its downloaded copies instead. Either way a missing
+// frame falls back to the regular thumbnail.
+let useFrames = store.get("frames", true);
+let framesSource = "youtube";
+const frameSrc = (vid) => framesSource === "local" ? `/frames/${vid}.jpg` : `https://i.ytimg.com/vi/${vid}/hq2.jpg`;
+const thumbSrc = (vid) => useFrames ? frameSrc(vid) : `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
+function thumbFallback(img) {
+  const vid = img.dataset.vid;
+  if (img.src.includes("/frames/")) img.src = `https://i.ytimg.com/vi/${vid}/hq2.jpg`;
+  else if (img.src.includes("/hq2.jpg")) img.src = `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
+  else img.onerror = null;
+}
+const thumb = (d) => `<div class="thumb"><img loading="lazy" src="${thumbSrc(d.vid)}" data-vid="${d.vid}" onerror="thumbFallback(this)" alt="">${laterBtn(d.vid)}<span class="dur">${dur(d.duration_s)}</span></div>`;
+const sub = (d) => [views(d.views), ago(d.published)].filter(Boolean).join(" • ");
+
+// ---------- components ----------
+const card = (d) => `<a class="vcard" href="/watch/${d.vid}"${d.reason ? ` title="${esc(d.reason)}"` : ""}>${thumb(d)}
+  <div class="info"><div style="min-width:0">
+    <h3 class="vt">${esc(d.title)}</h3><div class="sub">${esc(d.channel)}</div>
+    <div class="sub">${sub(d)}</div></div></div></a>`;
+
+const row = (d) => `<a class="srow" href="/watch/${d.vid}">${thumb(d)}<div style="min-width:0">
+    <h3 class="vt">${esc(d.title)}</h3><div class="sub">${sub(d)}</div>
+    <div class="chan">${esc(d.channel)}</div>
+    <div class="snip">${esc(d.summary)}</div>
+    ${d.via ? `<span class="via">Topic match · ${esc(d.via)}</span>` : ""}</div></a>`;
+
+const next = (d) => `<a class="next" href="/watch/${d.vid}">${thumb(d)}<div style="min-width:0">
+    <h3 class="vt">${esc(d.title)}</h3><div class="sub">${esc(d.channel)}</div><div class="sub">${sub(d)}</div></div></a>`;
+
+// comment text: escape, then turn the link markers into small pills
+const commentHTML = (t) => esc(t).replace(/\[VIDEO\]/g, '<span class="mk v">▶ this video</span>').replace(/\[LINK\]/g, '<span class="mk">link</span>');
+const STANCE = { strong_rec: "Strongly recommends", rec: "Recommends", reference: "Cites", joke: "Joke", critical: "Critical" };
+
+async function api(path) { const r = await fetch(path); if (!r.ok) throw new Error(r.status); return r.json(); }
+
+// ---------- infinite scroll ----------
+let pager = null;
+function infinite(container, load) {
+  if (pager) pager.disconnect();
+  let offset = 0, busy = false, done = false;
+  const sentinel = document.createElement("div"); sentinel.className = "sentinel";
+  container.after(sentinel);
+  const more = async () => {
+    if (busy || done) return; busy = true;
+    const items = await load(offset);
+    offset += items.length; done = items.length === 0;
+    container.insertAdjacentHTML("beforeend", items.map(card).join(""));
+    if (!offset) container.outerHTML = `<div class="status">${filtering(filterParams()) ? "No videos match these filters." : "Nothing here yet."}</div>`;
+    busy = false;
+    if (!done && sentinel.getBoundingClientRect().top < innerHeight + 800) more();
+  };
+  pager = new IntersectionObserver((e) => e[0].isIntersecting && more(), { rootMargin: "800px" });
+  pager.observe(sentinel);
+  more();
+}
+
+// ---------- pages ----------
+async function home() {
+  const params = filterParams();
+  view.innerHTML = `${filterBar("/browse", params, true, false)}<div class="grid" id="grid"></div>`;
+  wireFilterBar();
+  infinite($("#grid"), (offset) =>
+    api(`/api/feed?like=${likes.join(",")}&dislike=${dislikes.join(",")}&seen=${seen.join(",")}&seed=${seed}&offset=${offset}&n=36`));
+}
+
+// one topic category, best first, with its area as a breadcrumb
+async function category(id) {
+  areasCache ??= await api("/api/browse");
+  const a = areasCache.find(x => x.categories.some(c => c.id === id));
+  if (!a) return notFound();
+  const c = a.categories.find(c => c.id === id);
+  document.title = `${c.name} - Rexan`;
+  const params = filterParams();
+  view.innerHTML = `<div class="pagehead"><a class="crumb" href="/a/${a.id}">${esc(a.name)}</a><h2>${esc(c.name)}</h2></div>
+    ${filterBar(`/c/${id}`, params, true)}<div class="grid" id="grid"></div>`;
+  wireFilterBar();
+  infinite($("#grid"), (offset) => api(withParams("/api/list", { cat: id, ...params, offset, n: 36 })));
+}
+
+// every video, filtered and sorted: the home page's Filters lead here (advanced search without a query)
+async function browsePage() {
+  document.title = (filterParams().dur === "xlong" ? "Longs" : "Browse all videos") + " - Rexan";
+  const params = filterParams();
+  const longs = params.dur === "xlong";
+  view.innerHTML = `<div class="pagehead"><h2>${longs ? "Longs" : "All videos"}</h2>${longs
+      ? `<p class="sub">Every video over an hour. The opposite of Shorts.</p>` : ""}</div>${filterBar("/browse", params, true)}
+    <div class="grid" id="grid"></div>`;
+  wireFilterBar();
+  infinite($("#grid"), (offset) => api(withParams("/api/list", { ...params, offset, n: 36 })));
+}
+
+let areasCache = null;
+async function area(id) {
+  areasCache ??= await api("/api/browse");
+  const a = areasCache.find(x => x.id === id);
+  if (!a) return notFound();
+  const params = filterParams();
+  view.innerHTML = `<div class="pagehead"><h2>${esc(a.name)}</h2></div>
+    <div class="catwrap">${a.categories.map(c => `<a class="chip" href="/c/${c.id}">${esc(c.name)}</a>`).join("")}</div>
+    ${filterBar(`/a/${id}`, params, true)}<div class="grid" id="grid"></div>`;
+  wireFilterBar();
+  infinite($("#grid"), (offset) => api(withParams("/api/list", { area: id, ...params, offset, n: 36 })));
+}
+
+const playlistCard = (p) => `<a class="plcard" href="/p/${p.slug}">
+    <div class="mosaic">${p.cover.map(v => `<img loading="lazy" src="${thumbSrc(v)}" data-vid="${v}" onerror="thumbFallback(this)" alt="">`).join("")}
+      <span class="plcount">${p.count} videos · ${hours(p.minutes)}</span></div>
+    <h3 class="vt">${esc(p.title)}</h3><p class="sub">${esc(p.pitch)}</p></a>`;
+
+const hours = (m) => m >= 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m} min`;
+
+// one playlist: Claude's intro, then the videos in order with a note on each, and Play all on YouTube
+async function playlistPage(slug) {
+  let pl;
+  try { pl = await api(`/api/playlist?slug=${encodeURIComponent(slug)}`); } catch { return notFound(); }
+  document.title = `${pl.title} - Rexan`;
+  view.innerHTML = `<div class="plpage">
+    <div class="plhead">
+      <div class="mosaic">${pl.videos.slice(0, 4).map(d => `<img src="${thumbSrc(d.vid)}" data-vid="${d.vid}" onerror="thumbFallback(this)" alt="">`).join("")}</div>
+      <div class="plinfo">
+        <a class="crumb" href="/playlists">Playlists</a>
+        <h2>${esc(pl.title)}</h2>
+        <div class="sub">Curated by Claude · ${pl.videos.length} videos · ${hours(pl.minutes)}</div>
+        <p class="intro">${esc(pl.intro)}</p>
+        <div class="filterbar">${playAll()}</div>
+      </div>
+    </div>
+    <ol class="plrows">${pl.videos.map((d, i) => `<li><span class="num">${i + 1}</span>
+      <a class="srow" href="/watch/${d.vid}">${thumb(d)}<div style="min-width:0">
+        <h3 class="vt">${esc(d.title)}</h3><div class="sub">${esc(d.channel)} · ${sub(d)}</div>
+        <p class="plnote">${esc(d.note)}</p></div></a></li>`).join("")}</ol>
+  </div>`;
+  wirePlayAll();
+}
+
+// every topic area with its categories, plus quick ways into the whole collection
+async function categoriesPage() {
+  document.title = "Categories - Rexan";
+  areasCache ??= await api("/api/browse");
+  view.innerHTML = `<div class="explore">
+    <div class="pagehead"><h2>Categories</h2></div>
+    <div class="quick">
+      <a class="pill" href="/browse?sort=recent">Recently recommended</a>
+      <a class="pill" href="/browse?dur=xlong">Longs</a>
+      <a class="pill" href="/browse?gems=1">Hidden gems</a>
+      <a class="pill" href="/browse">All videos</a>
+    </div>
+    <div class="areas">${areasCache.map(a => `<section class="areacard">
+      <a class="areaname" href="/a/${a.id}">${esc(a.name)}<span class="count">${a.count}</span></a>
+      <div class="cats">${a.categories.map(c => `<a href="/c/${c.id}">${esc(c.name)}<span class="count">${c.count}</span></a>`).join("")}</div>
+    </section>`).join("")}</div>
+  </div>`;
+}
+
+// the playlists curated by Claude
+async function playlistsPage() {
+  document.title = "Playlists - Rexan";
+  const pls = await api("/api/playlists").catch(() => []);
+  view.innerHTML = `<div class="explore">
+    <div class="pagehead"><h2>Playlists</h2>
+      <p class="sub">Curated by Claude from what Hacker News recommends, each in a deliberate order.</p></div>
+    ${!pls.length ? `<p class="sub">Coming soon.</p>` : [["start", "Start here", "Broad, essential lists for your first visit."],
+        ["deep", "Deep dives", "One obsession each, for when you want to go down a rabbit hole."]]
+      .map(([tier, title, blurb]) => { const ps = pls.filter(p => (p.tier || "deep") === tier);
+        return ps.length ? `<h3 class="sechead">${title}</h3><p class="sub">${blurb}</p>
+          <div class="pgrid">${ps.map(playlistCard).join("")}</div>` : ""; }).join("")}
+  </div>`;
+}
+
+async function about() {
+  document.title = "About - Rexan";
+  const [s, ex] = await Promise.all([api("/api/stats"), api("/api/export").catch(() => ({}))]);
+  const fmt = (n) => Number(n).toLocaleString("en-US");
+  const rows = (name) => (ex.files || []).find(f => f.name === name)?.rows;
+  const size = (name) => { const f = (ex.files || []).find(f => f.name === name); return f ? mb(f.bytes) : ""; };
+  const exportFiles = [
+    ["videos.jsonl", `All ${fmt(rows("videos.jsonl") ?? s.videos)} videos: YouTube id and link, title, channel, summary, why HN likes it, type, level, shelf life, topics, categories, pull quote, HN stats and quality score`],
+    ["mentions.jsonl", `All ${fmt(rows("mentions.jsonl") ?? s.comments)} labeled HN comments: comment id and link, author, month, story title, stance, why, quote and the cleaned comment text`],
+    ["taxonomy.json", `The ${s.areas ?? ""} areas and ${s.categories ?? ""} topic categories, with synonym-rich descriptions`],
+    ["related.jsonl", `"HN people also recommend" for ${fmt(rows("related.jsonl") ?? 0)} videos (counts only, no usernames)`],
+    ["embeddings.npy", "The search vectors (bge-small, 384 dimensions, plus embedding_ids.json), so you get semantic search and \"similar videos\" for free"],
+    ["DATA.md", "How it was made, every field explained, stance definitions, a code example, licensing"],
+  ];
+  view.innerHTML = `<article class="about">
+    <h1>Rexan<span style="color:var(--accent)">.org</span></h1>
+    <p class="lede">The YouTube videos that Hacker News keeps telling each other to watch.</p>
+
+    <div class="stats">
+      <div class="stat"><b>${fmt(s.videos)}</b><span>videos</span></div>
+      <div class="stat"><b>${fmt(s.comments)}</b><span>HN comments read</span></div>
+      <div class="stat"><b>${fmt(s.categories ?? 0)}</b><span>topics in ${s.areas ?? 0} areas</span></div>
+      <div class="stat"><b>${s.first_year}–${s.last_year}</b><span>years of HN</span></div>
+    </div>
+
+    <h2>Why</h2>
+    <p>YouTube's recommendations are tuned for watch time. They're very good at finding the next thing you'll
+      click, and not so good at finding the talk you'll still be thinking about next year.</p>
+    <p>Meanwhile, for nearly two decades, Hacker News commenters have been pointing each other at exactly those
+      videos: the conference talk that changed how someone writes software, the lecture series that finally made
+      a subject click, the documentary nobody else seems to know about. Those recommendations are scattered
+      across millions of comments. Rexan collects them in one place and makes them browsable,
+      searchable and personal.</p>
+
+    <h2>How it was built</h2>
+    <ol class="steps">
+      <li><b>Read all of Hacker News.</b> Every comment from ${s.first_year} to ${s.last_year} (from a public
+        dataset of the full HN archive) was scanned for YouTube links. That turns up well over a hundred thousand
+        different videos.</li>
+      <li><b>Keep the videos HN keeps coming back to.</b> A video makes the cut if at least three different people
+        linked it with some real commentary, in at least three different months. One-off links and pure drive-bys
+        fall away, leaving roughly 7,000 videos.</li>
+      <li><b>Read each comment with an AI model.</b> A link isn't always a recommendation. Claude read each
+        comment, along with the title of the HN story it was posted under, and judged what the commenter was doing: recommending the video,
+        citing it as a source, using it as a joke, or criticizing it. It also picked out a short quote and a few
+        topics.</li>
+      <li><b>Write a card for every video.</b> Using the video's YouTube details and everything HN said about it,
+        Claude wrote a short summary, why HN people like it, what kind of video it is, and whether it has aged
+        well. Videos are then sorted into a shared list of topics.</li>
+      <li><b>Rank by lasting recommendations.</b> A video's standing comes from how many separate months people
+        recommended it in. Being linked again and again over the years counts for more than one viral spike.</li>
+    </ol>
+
+    <h2>What you can do</h2>
+    <ul>
+      <li><b>Home</b> mixes several kinds of picks: HN classics, hidden gems that HN loves but few people have watched,
+        recent favorites, topics you haven't explored yet, and, once you like a few videos, things similar to them
+        and things that the same HN people also recommended. Hover a video to see why it's there.</li>
+      <li><b>Search</b> understands topics, not just keywords. Searching "distributed systems" finds talks that
+        never use those words.</li>
+      <li><b>Browse</b> by topic on the Categories page, or start with one of the Playlists.</li>
+      <li><b>Every video page</b> shows what Hacker News actually said about it: the real comments, with links back
+        to the threads.</li>
+      <li><b>Like</b>, <b>Watch later</b> and <b>History</b> work like you'd expect. Likes steer your Home feed.</li>
+      <li><b>Keyboard shortcuts:</b> press <kbd>?</kbd> to see them all, e.g. <kbd>/</kbd> to search and
+        <kbd>j</kbd>/<kbd>k</kbd> to move through videos.</li>
+    </ul>
+
+    <h2>Fork it</h2>
+    <p>Everything behind this site is yours to reuse. The easiest way: <b>give the zip to your AI agent</b> (Claude
+      Code or similar) and tell it what you want, such as a different interface, a weekly email of talks on your topics,
+      a terminal browser, or an analysis. The zip includes a <code>DATA.md</code> written for agents: how the files fit
+      together, the gotchas, example records, and how to walk you through getting YouTube metadata if you want it.</p>
+    <p>The download${ex.zip ? ` (${mb(ex.zip.bytes)} zip)` : ""} contains:</p>
+    <table class="files">${exportFiles.map(([name, what]) => `<tr>
+      <td><code>${esc(name)}</code></td><td>${esc(what)}</td><td class="num">${size(name)}</td></tr>`).join("")}
+    </table>
+    <p style="margin-top:12px">It's released under ODC-By 1.0, like the Hacker News archive it comes from: use it for
+      anything, just credit Rexan (and HackerTube). YouTube's own metadata (descriptions, view counts, durations) isn't included,
+      because YouTube's terms don't allow redistributing it. Every record has the video id, so you can fetch it yourself.
+      <a href="/data">Download the data →</a></p>
+
+    <h2>Privacy</h2>
+    <p>There are no accounts. Your likes, history and Watch later list are stored only in this browser. Videos play
+      through YouTube's privacy-enhanced embed.</p>
+
+    <h2>Credits</h2>
+    <p>Rexan is cloned from HackerTube, built by <b>Claude Opus 5.5</b>, Anthropic's AI model, working in Claude Code: the data
+      pipeline, the search and recommendations, and this site. It was prompted into existence by
+      <a href="https://x.com/karpathy" target="_blank" rel="noopener">@karpathy</a>. The comment labels, video cards
+      and topic list were written by teams of Claude Sonnet 5.5 agents that Claude Opus coordinated.</p>
+
+    <p class="fine">Rexan is an independent project. It is not affiliated with YouTube, Google, Hacker News or Y
+      Combinator. Video data comes from the YouTube Data API, and comments from the public Hacker News archive.</p>
+  </article>`;
+}
+
+// a page listing saved videos, newest first
+async function savedPage(title, vids, empty, extra = "") {
+  view.innerHTML = `<div class="pagehead"><h2>${title}</h2>${extra}</div><div class="grid" id="grid"></div>`;
+  const res = vids.length ? await api(`/api/docs?vids=${vids.slice().reverse().join(",")}`) : [];
+  $("#grid").outerHTML = res.length ? `<div class="grid">${res.map(card).join("")}</div>`
+    : `<div class="status">${empty}</div>`;
+  if (res.length) { $(".pagehead").insertAdjacentHTML("beforeend", `<div class="filterbar">${playAll()}</div>`); wirePlayAll(); }
+}
+const liked = () => savedPage("Liked videos", likes, "Videos you like will show up here, and shape your Home feed.");
+const FILE_NOTES = {
+  "DATA.md": "How it was made, the schema of every file, licenses",
+  "videos.jsonl": "One line per video: YouTube id, title, channel, summary, why HN likes it, type, topics, categories, quote, HN stats, score",
+  "mentions.jsonl": "One line per labeled HN comment: id and link, author, month, story, stance, why, quote, text",
+  "taxonomy.json": "Topic areas and categories, with synonym-rich descriptions",
+  "related.jsonl": "Videos recommended by the same HN people (counts only)",
+  "embeddings.npy": "Search vectors: float16, 384 dims (bge-small-en-v1.5), one row per video",
+  "embedding_ids.json": "Which video each embedding row is",
+};
+const mb = (b) => b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`;
+
+async function dataPage() {
+  document.title = "Data - Rexan";
+  const m = await api("/api/export");
+  if (!m.files) { view.innerHTML = `<div class="status">The data export hasn't been built yet.</div>`; return; }
+  view.innerHTML = `<article class="about">
+    <h1>The data</h1>
+    <p class="lede">Everything behind Rexan, free to reuse. Give it to your AI agent and build your own.</p>
+    <p><a class="pill dl" href="/download/${esc(m.zip.name)}" download>
+      <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+      Download everything (${mb(m.zip.bytes)} zip)</a></p>
+    <p>${Number(m.videos).toLocaleString("en-US")} videos and ${Number(m.mentions).toLocaleString("en-US")} labeled
+      Hacker News comments, exported ${esc(m.generated)}.</p>
+
+    <h2>Give it to your agent</h2>
+    <p>Unzip it, open your AI agent (Claude Code or similar) in that folder, and tell it what to build. It will read
+      <code>DATA.md</code>, which explains the files, how they join, the gotchas and example records. If you want
+      view counts, durations or publish dates, it will walk you through getting a free YouTube API key. For example:</p>
+    <pre class="prompt" id="agent-prompt">Read DATA.md in this folder. Using this data, build me a small local web app
+that shows a fresh mix of HN-recommended talks each day, lets me filter by
+topic and length, and remembers what I've watched. Walk me through getting
+a YouTube API key so you can add durations.</pre>
+    <p><button class="pill" id="copy-prompt">Copy this prompt</button></p>
+    <p>Prefer to do it by hand? The files are plain JSON Lines (one JSON object per line), easy to load anywhere:
+      <code>pandas.read_json(path, lines=True)</code>, <code>jq</code>, or a five-line loop.</p>
+
+    <h2>Files</h2>
+    <table class="files">${m.files.map(f => `<tr>
+      <td><a href="/download/${esc(f.name)}" download><code>${esc(f.name)}</code></a></td>
+      <td class="num">${mb(f.bytes)}</td>
+      <td>${esc(FILE_NOTES[f.name] || "")}${f.rows && /jsonl$/.test(f.name) ? ` · ${f.rows.toLocaleString("en-US")} rows` : ""}</td></tr>`).join("")}
+    </table>
+
+    <h2>Not included</h2>
+    <p>YouTube's own metadata (descriptions, view counts, durations, publish dates) can't be redistributed under
+      YouTube's API terms. Every record has the video id, so you can fetch it with a free YouTube Data API key in
+      about ${Math.ceil(m.videos / 50)} requests. <code>DATA.md</code> has step-by-step instructions for you (5 minutes
+      in Google Cloud) and a ready-to-run script for your agent.</p>
+
+    <h2>License</h2>
+    <p><a href="https://opendatacommons.org/licenses/by/1-0/" target="_blank" rel="noopener">ODC-By 1.0</a>, the same as
+      the Hacker News archive it's derived from: use it for anything, just credit Rexan (and HackerTube) and the
+      <a href="https://huggingface.co/datasets/open-index/hacker-news" target="_blank" rel="noopener">open-index/hacker-news</a>
+      dataset. Comments remain the work of their authors. The labels, summaries and cards were written by Claude, so
+      expect a few to be off.</p>
+  </article>`;
+  $("#copy-prompt").onclick = async () => {
+    const el = $("#agent-prompt");
+    try { await navigator.clipboard.writeText(el.textContent); toast("Prompt copied"); return; } catch {}
+    // fallback for browsers/webviews without the async clipboard API: select the text and copy it
+    const range = document.createRange(); range.selectNodeContents(el);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch {}
+    toast(ok ? "Prompt copied" : "Prompt selected: press Ctrl/Cmd+C to copy");
+  };
+}
+
+function settings() {
+  document.title = "Settings - Rexan";
+  view.innerHTML = `<div class="settings">
+    <div class="pagehead"><h2>Settings</h2></div>
+    <label class="setting">
+      <div>
+        <b>Show video frames instead of thumbnails</b>
+        <p>YouTube thumbnails are designed by uploaders to grab your attention: big faces, arrows, shouting text.
+          With this on, every video is shown with a frame from the middle of the video instead, so you see
+          what it actually looks like. Turn it off to see the original thumbnails.</p>
+      </div>
+      <span class="switch"><input type="checkbox" id="frames-toggle" ${useFrames ? "checked" : ""}><span class="knob"></span></span>
+    </label>
+  </div>`;
+  $("#frames-toggle").onchange = (e) => { useFrames = e.target.checked; store.set("frames", useFrames); };
+}
+
+const later = () => savedPage("Watch later", watchLater, "Save videos to watch later with the clock button on a thumbnail or on a video's page.");
+async function historyPage() {
+  await savedPage("History", seen, "Videos you open will show up here.",
+    seen.length ? `<button class="pill" id="clear-history">Clear all watch history</button>` : "");
+  const btn = $("#clear-history");
+  if (btn) btn.onclick = () => { seen = []; store.set("seen", seen); historyPage(); };
+}
+
+// filters, YouTube-style, on search and topic pages. Each option is one URL parameter, so filtered pages are
+// shareable links. Hidden gems: recommended on HN but under 100k YouTube views. Evergreen: drops news-only videos.
+const FILTERS = [
+  ["Upload date", [["date", "year", "Past year"], ["date", "2020s", "2020s"], ["date", "2010s", "2010s"],
+                   ["date", "2000s", "2000s"]]],
+  ["Type", [["type", "talk", "Talk"], ["type", "lecture", "Lecture"], ["type", "explainer", "Explainer"],
+            ["type", "tutorial", "Tutorial"], ["type", "documentary", "Documentary"], ["type", "interview", "Interview"],
+            ["type", "demo", "Demo"], ["type", "commentary", "Commentary"], ["type", "comedy", "Comedy"],
+            ["type", "music", "Music"]]],
+  ["Duration", [["dur", "short", "Under 4 minutes"], ["dur", "medium", "4–20 minutes"], ["dur", "long", "20–60 minutes"],
+                ["dur", "xlong", "Over 1 hour"]]],
+  ["Features", [["gems", "1", "Hidden gems"], ["evergreen", "1", "Evergreen only"]]],
+  ["Sort by", [["sort", "", "Relevance"], ["sort", "recent", "Recently recommended"], ["sort", "date", "Upload date"],
+               ["sort", "old", "Oldest first"], ["sort", "views", "View count"], ["sort", "liked", "Like ratio"],
+               ["sort", "hn", "Most recommended"]]],
+];
+const FILTER_KEYS = [...new Set(FILTERS.flatMap(([, opts]) => opts.map(([k]) => k)))];
+let filtersOpen = false;
+
+const filterParams = () => {
+  const url = new URLSearchParams(location.search);
+  return Object.fromEntries(FILTER_KEYS.map((k) => [k, url.get(k) || ""]));
+};
+const withParams = (path, params) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return path + (qs ? `?${qs}` : "");
+};
+const filtering = (params) => FILTER_KEYS.some((k) => k !== "sort" && params[k]);
+
+// the Filters button, chips for the active filters, and the (collapsed) panel. On topic pages there is no
+// query, so the default order is "Best first" (most recommended) and that option is folded into it.
+function filterBar(path, params, listing = false, playable = true) {
+  // clicking an option sets it (clicking the active one clears it); the first sort option clears the sort
+  const link = (k, v) => withParams(path, { ...params, [k]: params[k] === v ? "" : v });
+  const groups = FILTERS.map(([title, opts]) => [title, !listing || title !== "Sort by" ? opts
+    : opts.filter(([, v]) => v !== "hn").map(([k, v, label]) => [k, v, v ? label : "Best first"])]);
+  const active = groups.flatMap(([, opts]) => opts.filter(([k, v]) => v && params[k] === v)
+    .map(([k, v, label]) => `<a class="chip on" href="${link(k, v)}" title="Remove filter">${label}<span>×</span></a>`));
+  return `<div class="filterbar">
+      <button class="pill${filtersOpen ? " on" : ""}" id="filters-btn" aria-expanded="${filtersOpen}">
+        <svg viewBox="0 0 24 24"><path d="M15 17h6v1h-6v-1zm-4 0H3v1h8v2h1v-5h-1v2zm3-9h1V3h-1v2H3v1h11v2zm4-3v1h3V5h-3zM6 14h1V9H6v2H3v1h3v2zm4-2h11v-1H10v1z"/></svg>
+        Filters</button>${active.join("")}<span class="grow"></span>${playable ? playAll() : ""}</div>
+    <div class="filters"${filtersOpen ? "" : " hidden"}>${groups.map(([title, opts]) => `<div><h4>${title}</h4>
+      ${opts.map(([k, v, label]) => `<a href="${link(k, v)}" class="${(params[k] || "") === v ? "on" : ""}">${label}</a>`).join("")}
+    </div>`).join("")}</div>`;
+}
+
+// "Play all on YouTube": YouTube's watch_videos link turns up to 50 video ids into a temporary playlist that
+// plays in the YouTube app too (phones, TVs), with no account or API. Uses the videos on the page, in order.
+const playAll = () => `<a class="pill playall" href="https://www.youtube.com/" target="_blank" rel="noopener"
+    title="Open the videos on this page as a playlist on YouTube"><svg viewBox="0 0 24 24"><path d="M3 5h12v2H3zm0 4h12v2H3zm0 4h8v2H3zm12 0v8l6-4z"/></svg>Play all on YouTube</a>`;
+function wirePlayAll() {
+  const a = $(".playall");
+  if (!a) return;
+  a.onclick = () => {
+    const ids = [...new Set([...view.querySelectorAll(".thumb img[data-vid]")].map((i) => i.dataset.vid))].slice(0, 50);
+    if (!ids.length) return false;
+    a.href = `https://www.youtube.com/watch_videos?video_ids=${ids.join(",")}`;
+  };
+}
+
+function wireFilterBar() {
+  wirePlayAll();
+  $("#filters-btn").onclick = () => {
+    filtersOpen = !filtersOpen;
+    $(".filters").hidden = !filtersOpen;
+    $("#filters-btn").classList.toggle("on", filtersOpen);
+    $("#filters-btn").setAttribute("aria-expanded", filtersOpen);
+  };
+  // choosing an option closes the panel, as on YouTube
+  for (const a of view.querySelectorAll(".filters a")) a.addEventListener("click", () => { filtersOpen = false; });
+}
+
+async function search(q) {
+  $("#q").value = q;
+  const params = filterParams();
+  view.innerHTML = `<div class="status">Searching…</div>`;
+  let res;
+  try { res = await api(withParams("/api/search", { q, ...params })); }
+  catch (e) {
+    if (e.message !== "429" && e.message !== "503") throw e;
+    view.innerHTML = `<div class="status">Lots of searches right now. Give it a minute and try again.</div>`;
+    return;
+  }
+  view.innerHTML = filterBar(`/search/${encodeURIComponent(q)}`, params)
+    + (res.weak && !res.results.length ? `<div class="note">No videos match “${esc(q)}” with these filters.</div>`
+       : res.weak ? `<div class="note">No strong matches for “${esc(q)}”. Here are the closest videos.</div>` : "")
+    + `<div class="results">${res.results.map(row).join("")}</div>`;
+  wireFilterBar();
+}
+
+// with frames on, the watch page starts with the frame + a play button (YouTube's embed would show the
+// custom thumbnail); the real player loads, autoplaying, on click
+const playerHTML = (d, autoplay) => `<iframe src="https://www.youtube-nocookie.com/embed/${d.vid}?rel=0${autoplay ? "&autoplay=1" : ""}"
+  title="${esc(d.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
+
+const fmtK = (n) => n == null || n === 0 ? "" : n >= 1e6 ? `${(n/1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n/1e3)}K` : `${n}`;
+
+async function watch(vid) {
+  view.innerHTML = `<div class="status">Loading…</div>`;
+  let data;
+  try { data = await api(`/api/video?vid=${encodeURIComponent(vid)}`); } catch { return notFound(); }
+  const d = data.video, hn = d.hn;
+  const isYT = d.comments_source === "youtube" || (data.comments[0] && (data.comments[0].ym === "YouTube" || data.comments[0].ym === "Rexan"));
+  document.title = `${d.title} - Rexan`;
+  markSeen(d.vid);
+  const recLine = hn.recommenders
+    ? `${hn.recommenders} HN recommender${hn.recommenders === 1 ? "" : "s"} · recommended in ${hn.rec_months} month${hn.rec_months === 1 ? "" : "s"}, ${hn.first}–${hn.last}`
+    : `Cited ${hn.mentions}× on HN, ${hn.first}–${hn.last}`;
+  view.innerHTML = `<div class="watch">
+    <div class="primary">
+      <div class="player" id="player">${useFrames
+        ? `<button class="poster" id="poster" aria-label="Play ${esc(d.title)}">
+             <img src="${frameSrc(d.vid)}" data-vid="${d.vid}" onerror="thumbFallback(this)" alt="">
+             <span class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></button>`
+        : playerHTML(d, false)}</div>
+      <h1>${esc(d.title)}</h1>
+      <div class="owner">
+        <div class="who"><div style="min-width:0"><b>${esc(d.channel)}</b><span class="sub">${esc(recLine)}</span></div></div>
+        <div class="actions">
+          <div class="seg">
+            <button id="like" class="${likes.includes(d.vid) ? "on" : ""}" aria-label="Like">
+              <svg viewBox="0 0 24 24"><path d="M18.77 11h-4.23l1.52-4.94C16.38 5.03 15.54 4 14.38 4c-.58 0-1.14.24-1.52.65L7 11H3v10h14.43c1.06 0 1.98-.67 2.19-1.61l1.34-6c.27-1.24-.78-2.39-2.19-2.39zM7 20H4v-8h3v8z"/></svg>
+              <span id="like-lbl">${fmtK(d.likes) || "Like"}</span>
+            </button>
+            <button id="dislike" class="${dislikes.includes(d.vid) ? "on" : ""}" aria-label="Dislike">
+              <svg viewBox="0 0 24 24"><path d="M17 4h-1H6.57c-1.07 0-1.98.67-2.19 1.61l-1.34 6C2.77 12.85 3.82 14 5.23 14h4.23l-1.52 4.94C7.62 19.97 8.46 21 9.62 21c.58 0 1.14-.24 1.52-.65L17 14h4V4h-4zm-6.6 15.67c-.19.21-.48.33-.78.33-.26 0-.5-.11-.63-.3-.07-.1-.15-.26-.09-.47l1.52-4.94.4-1.29H5.23c-.41 0-.8-.17-1.03-.46-.12-.15-.25-.4-.18-.72l1.34-6c.1-.47.61-.82 1.21-.82H16v8.61l-5.6 6.06zM20 13h-3V5h3v8z"/></svg>
+              <span id="dislike-lbl">${fmtK(d.dislikes)}</span>
+            </button>
+          </div>
+          <button class="pill" id="save-later">${watchLater.includes(d.vid) ? CHECK + "Saved" : CLOCK + "Watch later"}</button>
+          <a class="pill" href="https://www.youtube.com/watch?v=${d.vid}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>YouTube</a>
+        </div>
+      </div>
+      <div class="desc">
+        <div class="top-line">${[views(d.views), ago(d.published), d.content_type, d.shelf_life].filter(Boolean).map(esc).join(" · ")}</div>
+        <p>${esc(d.summary)}</p>
+        <p class="why">${esc(d.why_hn)}</p>
+        <div class="tags">${d.categories.map(c => `<a class="tag cat" href="/c/${c.id}">${esc(c.name)}</a>`).join("")}
+          ${d.tags.map(t => `<a class="tag" href="/search/${encodeURIComponent(t)}">#${esc(t.replace(/\s+/g, ""))}</a>`).join("")}</div>
+      </div>
+      <div class="comments">
+        <h2>${data.comments.length} comment${data.comments.length === 1 ? "" : "s"} from ${isYT ? `<span class="badge yt">YouTube</span>` : `<span class="badge hn">Hacker News</span>`}</h2>
+        ${data.comments.map(m => `<div class="cmt"><div class="body" style="min-width:0">
+          <div class="meta"><b>@${esc(m.author)}</b>${esc(m.ym.slice(0, 4))} · in “${esc(m.story)}”</div>
+          <p>${commentHTML(m.text)}</p>
+          <div class="foot"><span class="stance ${m.stance}">${STANCE[m.stance] || "Community pick"}</span>
+            ${isYT
+              ? `<a href="https://www.youtube.com/watch?v=${d.vid}" target="_blank" rel="noopener">View on YouTube</a>`
+              : `<a href="https://news.ycombinator.com/item?id=${m.id}" target="_blank" rel="noopener">View on HN</a>`
+            }</div>
+        </div></div>`).join("")}
+      </div>
+    </div>
+    <div class="secondary" id="upnext"><div class="status">Loading…</div></div>
+  </div>`;
+  $("#like").onclick = () => vote(d.vid, likes, dislikes, "#like", "#dislike");
+  $("#dislike").onclick = () => vote(d.vid, dislikes, likes, "#dislike", "#like");
+  $("#save-later").onclick = () => { $("#save-later").innerHTML = toggleLater(d.vid) ? CHECK + "Saved" : CLOCK + "Watch later"; };
+  const poster = $("#poster");
+  if (poster) poster.onclick = () => { $("#player").innerHTML = playerHTML(d, true); };
+  const rel = await api(`/api/related?vid=${d.vid}&n=20`);
+  if (location.pathname === `/watch/${d.vid}`) $("#upnext").innerHTML = rel.map(next).join("");
+  
+  if (!d.dislikes) {
+    api(`/api/video/dislikes?vid=${d.vid}`).then((st) => {
+      if (st && st.dislikes != null) {
+        const dLbl = $("#dislike-lbl"), lLbl = $("#like-lbl");
+        if (dLbl) dLbl.textContent = fmtK(st.dislikes);
+        if (lLbl && st.likes) lLbl.textContent = fmtK(st.likes);
+      }
+    }).catch(() => {});
+  }
+}
+
+function vote(vid, list, other, me, them) {
+  const i = list.indexOf(vid);
+  if (i >= 0) list.splice(i, 1); else { list.push(vid); const j = other.indexOf(vid); if (j >= 0) other.splice(j, 1); }
+  store.set("likes", likes); store.set("dislikes", dislikes);
+  $(me).classList.toggle("on", list.includes(vid)); $(them).classList.remove("on");
+}
+
+function notFound() { view.innerHTML = `<div class="status">Not found.</div>`; }
+
+// ---------- router ----------
+// Real paths (/watch/<id>, /search/<q>, ...) so links are shareable and get link previews; the server
+// returns this page for every such path. In-app navigation uses pushState, so it stays instant.
+function navigate(path) {
+  if (path !== location.pathname + location.search) history.pushState(null, "", path);
+  route();
+}
+
+
+let currentFetchedMeta = null;
+let currentTags = [];
+
+async function addVideoPage() {
+  document.title = "Add Video - Rexan";
+  const pls = await api("/api/playlists").catch(() => []);
+  
+  view.innerHTML = `
+    <div class="add-container">
+      <div class="pagehead">
+        <h2>Add video to Rexan</h2>
+        <p class="subhead">Enter any YouTube video link. Rexan automatically fetches video details, inspects Hacker News for discussions (or extracts top YouTube comments), and pre-assigns tags and categories.</p>
+      </div>
+
+      <div class="form-card">
+        <div class="field">
+          <label for="video-url">YouTube Video URL or ID</label>
+          <div class="url-row">
+            <input id="video-url" type="url" placeholder="https://www.youtube.com/watch?v=... or youtu.be/..." autofocus>
+            <button class="btn-primary" id="fetch-btn">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              Fetch details
+            </button>
+          </div>
+        </div>
+
+        <div id="fetch-status" style="display:none; padding:12px 0;"></div>
+
+        <div id="video-details-form" style="display:none;">
+          <div class="preview-box">
+            <img class="preview-thumb" id="prev-thumb" src="" alt="Thumbnail">
+            <div class="preview-meta">
+              <div class="preview-title" id="prev-title-text"></div>
+              <div class="preview-channel" id="prev-channel-text"></div>
+              <div style="margin-top:4px;" id="prev-badge"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="edit-title">Title</label>
+            <input id="edit-title" type="text">
+          </div>
+
+          <div class="field">
+            <label for="edit-channel">Channel</label>
+            <input id="edit-channel" type="text">
+          </div>
+
+          <div class="field">
+            <label for="edit-playlist">Add to Playlist (Optional)</label>
+            <select id="edit-playlist">
+              <option value="">-- None (Video Catalog only) --</option>
+              ${pls.map(p => `<option value="${esc(p.slug)}">${esc(p.title)} (${p.count} videos)</option>`).join("")}
+            </select>
+          </div>
+
+          <div class="field" id="note-field" style="display:none;">
+            <label for="edit-note">Why add to this playlist? (Optional note)</label>
+            <input id="edit-note" type="text" placeholder="e.g. Fundamental explanation of distributed systems">
+          </div>
+
+          <div class="field">
+            <label>Tags (Pre-assigned & Editable)</label>
+            <div class="tag-editor" id="tag-editor">
+              <input class="tag-input" id="tag-input" placeholder="Type tag and press Enter...">
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px;">Click × on any tag to remove it, or type a new tag and press Enter.</div>
+          </div>
+
+          <div class="field">
+            <label for="edit-summary">Summary / Description</label>
+            <textarea id="edit-summary"></textarea>
+          </div>
+
+          <div style="margin-top:24px;display:flex;gap:12px;align-items:center;">
+            <button class="btn-primary" id="save-video-btn" style="height:44px;font-size:15px;padding:0 24px;">
+              Save & Open Video
+            </button>
+            <a class="pill" href="/" style="text-decoration:none;">Cancel</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="extension-banner">
+        <div>
+          <b>Prefer 1-Click adding while browsing YouTube?</b>
+          <div style="color:var(--muted);font-size:13px;margin-top:2px;">Use the Rexan Chrome/Firefox Extension to add any video with a single click.</div>
+        </div>
+        <a class="pill" href="/extension" style="white-space:nowrap;">Get Extension</a>
+      </div>
+    </div>
+  `;
+
+  const urlInput = $("#video-url");
+  const fetchBtn = $("#fetch-btn");
+  const fetchStatus = $("#fetch-status");
+  const detailsForm = $("#video-details-form");
+  const playlistSelect = $("#edit-playlist");
+  const noteField = $("#note-field");
+  const tagEditor = $("#tag-editor");
+  const tagInput = $("#tag-input");
+  const saveBtn = $("#save-video-btn");
+
+  playlistSelect.onchange = () => {
+    noteField.style.display = playlistSelect.value ? "flex" : "none";
+  };
+
+  function renderTags() {
+    const existingChips = tagEditor.querySelectorAll(".tag-item");
+    existingChips.forEach(el => el.remove());
+    currentTags.forEach((t, idx) => {
+      const chip = document.createElement("span");
+      chip.className = "tag-item";
+      chip.innerHTML = `${esc(t)} <span class="tag-del" data-idx="${idx}" title="Remove tag">×</span>`;
+      tagInput.before(chip);
+    });
+  }
+
+  tagEditor.onclick = (e) => {
+    const del = e.target.closest(".tag-del");
+    if (del) {
+      const idx = parseInt(del.dataset.idx, 10);
+      currentTags.splice(idx, 1);
+      renderTags();
+    }
+  };
+
+  tagInput.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const val = tagInput.value.trim().toLowerCase().replace(/^#/, "");
+      if (val && !currentTags.includes(val)) {
+        currentTags.push(val);
+        renderTags();
+      }
+      tagInput.value = "";
+    } else if (e.key === "Backspace" && !tagInput.value && currentTags.length > 0) {
+      currentTags.pop();
+      renderTags();
+    }
+  };
+
+  async function doFetch(inputUrl) {
+    if (!inputUrl) return;
+    fetchStatus.style.display = "block";
+    fetchStatus.innerHTML = `<span style="color:var(--muted);">Fetching video metadata and comments…</span>`;
+    fetchBtn.disabled = true;
+
+    try {
+      const meta = await api(`/api/video/fetch-meta?url=${encodeURIComponent(inputUrl)}`);
+      currentFetchedMeta = meta;
+      currentTags = meta.tags ? [...meta.tags] : [];
+
+      fetchStatus.style.display = "none";
+      detailsForm.style.display = "block";
+
+      $("#prev-thumb").src = meta.thumbnail;
+      $("#prev-title-text").textContent = meta.title;
+      $("#prev-channel-text").textContent = `${meta.channel} · ${dur(meta.duration_s)} · ${views(meta.views)}`;
+      
+      const badgeEl = $("#prev-badge");
+      if (meta.exists) {
+        badgeEl.innerHTML = `<span class="badge exist">Already in Rexan (will update)</span>`;
+      } else if (meta.comments_source === "hackernews") {
+        badgeEl.innerHTML = `<span class="badge hn">✓ ${meta.comments.length} Hacker News discussions found</span>`;
+      } else {
+        badgeEl.innerHTML = `<span class="badge yt">ℹ Top YouTube community comments attached</span>`;
+      }
+
+      $("#edit-title").value = meta.title;
+      $("#edit-channel").value = meta.channel;
+      $("#edit-summary").value = meta.summary;
+
+      renderTags();
+    } catch (err) {
+      fetchStatus.style.display = "block";
+      fetchStatus.innerHTML = `<span style="color:#e62117;">Failed to fetch video: ${esc(err.message || "Invalid URL")}. Please check the link.</span>`;
+    } finally {
+      fetchBtn.disabled = false;
+    }
+  }
+
+  fetchBtn.onclick = () => doFetch(urlInput.value.trim());
+  urlInput.onkeydown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doFetch(urlInput.value.trim());
+    }
+  };
+
+  saveBtn.onclick = async () => {
+    if (!currentFetchedMeta) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+
+    const payload = {
+      url: currentFetchedMeta.vid,
+      title: $("#edit-title").value.trim(),
+      channel: $("#edit-channel").value.trim(),
+      summary: $("#edit-summary").value.trim(),
+      tags: currentTags,
+      categories: currentFetchedMeta.categories || [],
+      playlist_slug: playlistSelect.value || null,
+      custom_note: $("#edit-note").value.trim() || null
+    };
+
+    try {
+      const resp = await fetch("/api/video/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || "Error saving video");
+      toast("Video saved successfully!");
+      navigate(data.redirect_url || `/watch/${currentFetchedMeta.vid}`);
+    } catch (err) {
+      toast(`Error: ${err.message}`);
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save & Open Video";
+    }
+  };
+
+  // Check query params if prefilled
+  const urlParam = new URLSearchParams(location.search).get("url");
+  if (urlParam) {
+    urlInput.value = urlParam;
+    doFetch(urlParam);
+  }
+}
+
+function extensionPage() {
+  document.title = "Browser Extension - Rexan";
+  view.innerHTML = `
+    <div class="add-container">
+      <div class="pagehead">
+        <h2>Rexan Browser Extension</h2>
+        <p class="subhead">Add YouTube videos to your Rexan library with a single click while browsing YouTube.</p>
+      </div>
+
+      <div class="instructions-card">
+        <h3>How to Install the Extension (1 Minute)</h3>
+        <p>The extension is already included in your Rexan folder at <code>rexan.org/extension</code>.</p>
+        <ol>
+          <li>Open Google Chrome (or Brave / Edge / Opera) and go to <code>chrome://extensions</code></li>
+          <li>Turn on <b>Developer mode</b> using the toggle switch in the top-right corner.</li>
+          <li>Click the <b>Load unpacked</b> button in the top-left.</li>
+          <li>Select the <code>rexan.org/extension</code> folder:
+            <pre class="prompt">/Users/jainamshah/Downloads/Learning French/rexan.org/extension</pre>
+          </li>
+          <li>Pin the <b>Rexan</b> icon to your browser toolbar!</li>
+        </ol>
+
+        <h3 style="margin-top:24px;">How to Use</h3>
+        <ul>
+          <li><b>1-Click on YouTube:</b> Whenever you are watching a video on YouTube, click the Rexan extension icon. It automatically captures the active video, selects a playlist, pre-assigns tags, and lets you save it with one click!</li>
+          <li><b>From Anywhere:</b> You can also paste any YouTube link directly into the extension popup.</li>
+        </ul>
+        <div style="margin-top:20px;">
+          <a class="btn-primary" href="/add">Open In-Site Add Video Form</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function route() {
+  // links from before path routing looked like /#/watch/<id>: move them to the real path
+  if (location.hash.startsWith("#/")) {
+    history.replaceState(null, "", location.hash.slice(1));
+  }
+  const path = location.pathname;
+  const [, page, ...rest] = path.split("/");
+  const arg = decodeURIComponent(rest.join("/"));
+  document.title = "Rexan";
+  document.body.classList.remove("drawer");
+  selected = -1;
+  for (const a of document.querySelectorAll(".side a")) {
+    a.classList.toggle("on", a.getAttribute("href") === path + location.search);
+  }
+  if (page !== "search") $("#q").value = "";
+  if (pager) { pager.disconnect(); pager = null; }
+  try {
+    if (!page) await home();
+    else if (page === "c") await category(arg);
+    else if (page === "categories") await categoriesPage();
+    else if (page === "playlists") await playlistsPage();
+    else if (page === "p") await playlistPage(arg);
+    else if (page === "a") await area(arg);
+    else if (page === "browse") await browsePage();
+    else if (page === "watch") await watch(arg);
+    else if (page === "search") await search(arg);
+    else if (page === "liked") await liked();
+    else if (page === "history") await historyPage();
+    else if (page === "later") await later();
+    else if (page === "about") await about();
+    else if (page === "settings") settings();
+    else if (page === "data") await dataPage();
+    else if (page === "add") await addVideoPage();
+    else if (page === "extension") extensionPage();
+    else notFound();
+  } catch (e) { view.innerHTML = `<div class="status">Something went wrong (${esc(e.message)}).</div>`; }
+  window.scrollTo(0, 0);
+}
+addEventListener("popstate", route);
+// follow same-site links without a page load (modified clicks still open new tabs as usual)
+document.addEventListener("click", (e) => {
+  const a = e.target instanceof Element && e.target.closest("a[href^='/']");
+  if (!a || a.target || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  navigate(a.getAttribute("href"));
+});
+
+$("#search").addEventListener("submit", (e) => {
+  e.preventDefault(); const q = $("#q").value.trim();
+  $("#q").blur();
+  // filters chosen on this page (browse, topic, search) carry over into the search
+  navigate(q ? withParams(`/search/${encodeURIComponent(q)}`, filterParams()) : "/");
+});
+$("#menu").onclick = () => {
+  if (matchMedia("(max-width: 800px)").matches) document.body.classList.toggle("drawer");
+  else { document.body.classList.toggle("collapsed"); store.set("collapsed", document.body.classList.contains("collapsed")); }
+};
+$("#scrim").onclick = () => document.body.classList.remove("drawer");
+// the thumbnail clock button sits inside a link: toggle Watch later without following the link
+function onLaterButton(e) {
+  const b = e.target instanceof Element && e.target.closest("[data-later]");
+  if (!b || (e.type === "keydown" && e.key !== "Enter" && e.key !== " ")) return;
+  e.preventDefault(); e.stopPropagation();
+  const on = toggleLater(b.dataset.later);
+  b.outerHTML = laterBtn(b.dataset.later);
+  if (!on && location.pathname === "/later") later();
+}
+document.addEventListener("click", onLaterButton, true);
+document.addEventListener("keydown", onLaterButton, true);
+$("#theme").onclick = () => {
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const cur = document.documentElement.dataset.theme || (dark ? "dark" : "light");
+  const t = cur === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = t; store.set("theme", t);
+};
+if (store.get("theme")) document.documentElement.dataset.theme = store.get("theme");
+if (store.get("collapsed", false)) document.body.classList.add("collapsed");
+
+// ---------- keyboard shortcuts ----------
+let selected = -1;                                         // index of the keyboard-selected video on the page
+const listItems = () => [...view.querySelectorAll(".vcard, .srow, .next")];
+const vidOf = (el) => el?.getAttribute("href")?.split("/").pop();
+function select(i) {
+  const list = listItems();
+  if (!list.length) return;
+  selected = Math.max(0, Math.min(i, list.length - 1));
+  list.forEach((el, j) => el.classList.toggle("kbd", j === selected));
+  list[selected].scrollIntoView({ block: "nearest" });
+}
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 1800);
+}
+function keyLike(vid) {
+  const i = likes.indexOf(vid);
+  if (i >= 0) likes.splice(i, 1); else { likes.push(vid); dislikes = dislikes.filter(v => v !== vid); }
+  store.set("likes", likes); store.set("dislikes", dislikes);
+  if (location.pathname === `/watch/${vid}`) { $("#like")?.classList.toggle("on", likes.includes(vid)); $("#dislike")?.classList.remove("on"); }
+  toast(likes.includes(vid) ? "Added to Liked" : "Removed from Liked");
+}
+function keyLater(vid) {
+  const on = toggleLater(vid);
+  document.querySelectorAll(`[data-later="${vid}"]`).forEach(b => { b.outerHTML = laterBtn(vid); });
+  if (location.pathname === `/watch/${vid}` && $("#save-later")) $("#save-later").innerHTML = on ? CHECK + "Saved" : CLOCK + "Watch later";
+  toast(on ? "Saved to Watch later" : "Removed from Watch later");
+}
+const SHORTCUTS = [["/", "Search"], ["j / k", "Next / previous video"], ["Enter", "Open the selected video"],
+  ["l", "Like the selected or current video"], ["w", "Watch later for the selected or current video"],
+  ["p", "Play (on a video page)"], ["h", "Home"], ["?", "Show these shortcuts"], ["Esc", "Close / leave the search box"]];
+function toggleHelp(force) {
+  const h = $("#help");
+  const show = force ?? !h.classList.contains("on");
+  h.innerHTML = `<div class="help-card" role="dialog" aria-label="Keyboard shortcuts"><h3>Keyboard shortcuts</h3>
+    <table>${SHORTCUTS.map(([k, d]) => `<tr><td>${k.split(" / ").map(x => `<kbd>${esc(x)}</kbd>`).join(" / ")}</td><td>${esc(d)}</td></tr>`).join("")}</table></div>`;
+  h.classList.toggle("on", show);
+}
+$("#help").onclick = (e) => { if (e.target.id === "help") toggleHelp(false); };
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const el = document.activeElement;
+  const typing = el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable);
+  if (e.key === "Escape") {
+    if (typing) el.blur();
+    toggleHelp(false); document.body.classList.remove("drawer");
+    return;
+  }
+  if (typing) return;
+  const sel = listItems()[selected];
+  const watching = location.pathname.startsWith("/watch/") ? location.pathname.split("/")[2] : null;
+  const target = vidOf(sel) || watching;
+  const key = e.code === "Slash" && e.shiftKey ? "?" : e.key;   // "?" by position too, for odd layouts
+  switch (key) {
+    case "/": e.preventDefault(); $("#q").focus(); $("#q").select(); break;
+    case "j": select(selected + 1); break;
+    case "k": select(selected - 1); break;
+    case "Enter": if (sel) { e.preventDefault(); navigate(sel.getAttribute("href")); } break;
+    case "l": if (target) keyLike(target); break;
+    case "w": if (target) keyLater(target); break;
+    case "p": $("#poster")?.click(); break;
+    case "h": navigate("/"); break;
+    case "?": toggleHelp(); break;
+    default: return;
+  }
+});
+
+api("/api/config").then((c) => { framesSource = c.frames_source || "youtube"; }).catch(() => {}).finally(route);
+</script>
+</body>
+</html>

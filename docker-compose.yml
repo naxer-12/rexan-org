@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  rexan:
+    build: .
+    container_name: rexan
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=8000
